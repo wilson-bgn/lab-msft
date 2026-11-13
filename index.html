@@ -1,0 +1,977 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>[AGUARDANDO] LAB-MSFT</title>
+<link rel="icon" id="fav" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;700&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* LAB-MSFT mobile · uma coluna, veredito fixo no topo, mapa de calor logo abaixo */
+:root{
+  --bg:#000; --p1:#0b0b0b; --p2:#151515; --ln:#222; --ln2:#333;
+  --ink:#ececec; --dim:#9b9b9b; --faint:#5e5e5e;
+  --org:#ff8a00; --amb:#ffb000; --grn:#1fd062; --red:#ff3434; --blu:#3d8bfd; --yel:#ffd400;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  --cond:'IBM Plex Sans Condensed','Arial Narrow',Arial,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font:13px/1.45 var(--mono);padding-bottom:env(safe-area-inset-bottom,0px)}
+a{color:inherit}
+button{font:700 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;cursor:pointer;padding:10px 12px;border:1px solid #3a3a3a;background:#1b1b1b;color:var(--amb);border-radius:0;-webkit-tap-highlight-color:transparent}
+button:active{filter:brightness(1.3)}
+button:focus-visible{outline:2px solid var(--yel);outline-offset:1px}
+.wrap{max-width:560px;margin:0 auto;padding-left:max(10px,env(safe-area-inset-left,0px));padding-right:max(10px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px;padding-block:8px 16px}
+
+/* barra fixa */
+.bar{position:sticky;top:0;z-index:20;background:#000;border-bottom:2px solid var(--org);padding-top:env(safe-area-inset-top,0px)}
+.bar-in{max-width:560px;margin:0 auto;display:flex;align-items:center;gap:8px;padding:7px max(10px,env(safe-area-inset-right,0px)) 7px max(10px,env(safe-area-inset-left,0px))}
+.go{background:var(--org);color:#000;font:700 14px/1 var(--cond);letter-spacing:.06em;padding:5px 7px}
+.vpill{font:700 15px/1 var(--cond);letter-spacing:.04em;padding:5px 8px;background:#222;color:var(--dim)}
+.vpill[data-v=down]{background:#c71f1f;color:#fff;animation:slowfade 3s ease-in-out infinite}
+.vpill[data-v=rec]{background:var(--amb);color:#000}
+.vpill[data-v=ok]{background:var(--grn);color:#000}
+.vpill[data-v=inc]{background:var(--blu);color:#fff}
+.meta{margin-left:auto;text-align:right;font-size:10.5px;color:var(--dim);line-height:1.25}
+.meta b{color:var(--amb);font-weight:600;font-variant-numeric:tabular-nums}
+
+/* painéis */
+.panel{background:var(--p1);border:1px solid var(--ln2)}
+.ph{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 10px;background:#151515;border-bottom:1px solid var(--ln2);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.ph span:first-child{color:var(--org);font-weight:800}
+
+/* veredito */
+.verdict{--vc:var(--dim)}
+.verdict[data-v=down]{--vc:var(--red)} .verdict[data-v=rec]{--vc:var(--amb)} .verdict[data-v=ok]{--vc:var(--grn)} .verdict[data-v=inc]{--vc:var(--blu)}
+.vbig{font:700 52px/1 var(--cond);color:var(--vc);padding:12px 12px 4px;white-space:nowrap;overflow:hidden}
+.verdict[data-v=down] .vbig{animation:slowfade 3s ease-in-out infinite}
+.vsub{padding:0 12px 10px;font-size:12.5px}
+.streak{display:flex;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid var(--ln);font-size:10.5px;color:var(--dim);letter-spacing:.1em}
+#streakBoxes{display:flex;gap:4px;flex:1}
+#streakBoxes i{flex:1;height:12px;border:1px solid var(--ln2);max-width:40px}
+#streakBoxes i.on{background:var(--grn);border-color:var(--grn)}
+.streak b{color:var(--amb)}
+.vact{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 10px 10px}
+.k-arm{background:#b3201a;border-color:#b3201a;color:#fff}
+.k-arm.on{background:var(--grn);border-color:var(--grn);color:#000}
+.k-wake.on{background:var(--amb);border-color:var(--amb);color:#000}
+.vnote{padding:0 12px 10px;font-size:10.5px;color:var(--faint)}
+
+/* mapa de calor */
+.map{position:relative;height:330px;background:#000;overflow:hidden;touch-action:manipulation}
+.sec{position:absolute;background:#0d0d0d;outline:1px solid #000}
+.sec .sh{position:absolute;left:0;right:0;top:0;height:15px;display:flex;justify-content:space-between;gap:4px;padding:0 4px;align-items:center;background:#1a1a1a;font:700 9.5px/15px var(--cond);letter-spacing:.08em;color:var(--org);white-space:nowrap;overflow:hidden}
+.sec .sc{color:var(--dim);font-family:var(--mono);font-size:9px}
+.sec .sc.bad{color:var(--red)}
+.sec.run .sh{background:#3a2a00;color:var(--yel)}
+.sec.nohdr .sh{display:none}
+.tile{position:absolute;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:#1c1c1c;color:#fff;transition:background-color .8s ease;--fs:16px}
+.tile .tk{font:700 var(--fs)/1 var(--cond);white-space:nowrap}
+.tile .tv{font:600 calc(var(--fs)*.40 + 3px)/1.15 var(--mono);white-space:nowrap;max-width:100%;overflow:hidden;padding:0 2px}
+.tile.xs .tv{display:none}
+.tile[data-s=ok][data-lv=g3]{background:#14a84b}
+.tile[data-s=ok][data-lv=g2]{background:#0e7f39}
+.tile[data-s=ok][data-lv=g1]{background:#0a5f2b}
+.tile[data-s=slow],.tile[data-s=warn]{background:#a86a00}
+.tile[data-s=unk]{background:#1d4a73}
+.tile[data-s=fail],.tile[data-s=incident]{background:#7a1515;animation:redpulse 3s ease-in-out infinite}
+.tile.run::after{content:"";position:absolute;inset:0;border:2px solid rgba(255,255,255,.9);animation:blink .6s steps(2) infinite;pointer-events:none}
+.tile.back{animation:backflash 1.4s ease-out 2}
+.tile.sel{outline:2px solid var(--yel);outline-offset:-2px;z-index:2}
+.mbar{display:flex;flex-wrap:wrap;gap:4px 12px;padding:6px 10px;font-size:11px;color:var(--dim);border-top:1px solid var(--ln)}
+.mbar b{font-weight:800}
+.mbar .g b{color:var(--grn)} .mbar .r b{color:var(--red)} .mbar .a b{color:var(--amb)}
+.det{padding:7px 10px;font-size:11.5px;color:var(--dim);border-top:1px solid var(--ln);min-height:34px}
+.det b{color:var(--amb)}
+
+/* status oficial */
+.offrow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px 3px}
+.tag{font-size:10px;letter-spacing:.1em;color:var(--org);font-weight:800}
+.pill{font-size:10.5px;font-weight:800;letter-spacing:.06em;padding:3px 6px;border:1px solid var(--ln2);color:var(--dim);white-space:nowrap}
+.pill[data-s=ok]{color:#000;background:var(--grn);border-color:var(--grn)}
+.pill[data-s=warn],.pill[data-s=slow]{color:#000;background:var(--amb);border-color:var(--amb)}
+.pill[data-s=incident],.pill[data-s=fail]{color:#fff;background:#c71f1f;border-color:#c71f1f}
+.pill[data-s=unk]{color:#fff;background:#1d4a73;border-color:#1d4a73}
+.offtitle{padding:2px 10px 4px;font-weight:600}
+details.offmore{padding:0 10px 8px}
+details.offmore summary{cursor:pointer;color:var(--amb);font-size:11px;padding:4px 0}
+.offmsg{white-space:pre-wrap;font-size:11px;color:var(--dim);border-left:2px solid var(--org);padding:6px 8px;background:#050505;margin-top:4px}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:6px 10px;border-top:1px solid var(--ln);font-size:11.5px;color:var(--dim)}
+.kv b{color:var(--amb);font-weight:600;text-align:right}
+
+/* mundo */
+.wwrap{height:190px;background:#030303;border-bottom:1px solid var(--ln)}
+.world{display:block;width:100%;height:100%}
+.world .grat{fill:none;stroke:#141414;stroke-width:.5}
+.world .ctry{fill:#1b1b1b;stroke:#2e2e2e;stroke-width:.5;transition:fill .8s}
+.world .ctry.n-issue{fill:rgba(255,138,0,var(--heat,.4))}
+.world .ctry.n-back{fill:#0f766e}
+.world .ctry.p-ok{fill:#0e7f39}
+.world .ctry.p-back{fill:#1fd062}
+.world .ctry.p-noctl{fill:#2c2c2c}
+.world .ctry.p-down{animation:ctrypulse 3s ease-in-out infinite}
+.world .pdot .core{stroke:#000;stroke-width:1;fill:#bbb}
+.world .pdot .halo{fill:none;stroke-width:1.5;opacity:0;transform-box:fill-box;transform-origin:center}
+.world .pdot.s-down .core{fill:var(--red)}
+.world .pdot.s-down .halo{stroke:var(--red);animation:halo 3s ease-out infinite}
+.world .pdot.s-ok .core{fill:var(--grn)}
+.world .pdot.s-back .core{fill:#b9ffd2}
+.world .pdot.s-back .halo{stroke:var(--grn);animation:halo 2s ease-out infinite}
+.world .pdot.s-noctl .core{fill:#666}
+.world .pdot.s-wait .core{fill:var(--yel)}
+.world .wmsg{fill:var(--faint);font:11px var(--mono)}
+.chips{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;padding:5px 6px}
+.chip{font-size:10.5px;padding:4px 4px;background:#151515;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+.chip b{display:block;color:var(--ink);font-size:11.5px}
+.chip.s-down{background:#5e1010;color:#ffd0d0;animation:chippulse 3s ease-in-out infinite}
+.chip.s-ok{background:#0b4d25;color:#c8f7d8}
+.chip.s-back{background:#1fd062;color:#000}
+.chip.s-back b{color:#000}
+.chip.s-noctl{background:#262626;color:#888}
+.winfo{padding:3px 10px 8px;font-size:10px;color:var(--faint)}
+.winfo b{color:var(--amb);font-weight:600}
+
+/* notícias */
+.nstat{display:flex;gap:14px;padding:6px 10px;font-size:11px;color:var(--dim);border-bottom:1px solid var(--ln)}
+.nstat b{color:var(--amb);font-weight:800}
+.ni{display:block;padding:9px 10px;border-bottom:1px solid var(--ln);text-decoration:none}
+.ni:active{background:#151515}
+.nt{display:block;color:#fff;font-size:13px;line-height:1.35}
+.nm{display:block;margin-top:3px;color:var(--amb);font-size:10.5px}
+.ncc{display:inline-block;color:#000;background:var(--amb);font-weight:800;padding:0 4px;margin-right:6px}
+.ncc.mk{background:#333;color:#aaa}
+.nback{display:inline-block;color:#000;background:#2dd4bf;font-weight:800;padding:0 4px;margin-right:6px;font-size:10.5px}
+.ni.new .nt::before{content:"NOVO ";color:var(--yel);font-weight:800;font-size:10.5px}
+.empty{padding:12px 10px;color:var(--faint)}
+.links{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px}
+.links a{display:block;padding:10px 8px;border:1px solid var(--ln2);text-decoration:none;font-size:11.5px;color:var(--amb);text-align:center}
+.links a.human{grid-column:1/-1;background:var(--org);color:#000;font-weight:800;border-color:var(--org)}
+.foot{font-size:10.5px;color:var(--faint);padding:2px 2px 8px}
+
+/* alarme */
+.alarm{position:fixed;inset:0;z-index:100;display:grid;place-items:center;background:rgba(0,0,0,.9);padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.alarm[hidden]{display:none}
+.alarm.normal{--ac:var(--grn)} .alarm.regress{--ac:var(--red)}
+.abox{border:3px solid var(--ac);padding:22px 18px;width:100%;max-width:520px;background:#050505;text-align:center;animation:alarmPulse 1.2s ease-in-out infinite}
+.atag{font-size:11px;letter-spacing:.14em;color:var(--org);font-weight:800}
+.abig{font:700 clamp(34px,11vw,60px)/1.02 var(--cond);color:var(--ac);margin:12px 0}
+.asub{font-size:13px;margin-bottom:18px}
+.abox button{background:var(--ac);border-color:var(--ac);color:#000;width:100%;padding:14px}
+
+@keyframes blink{50%{opacity:.25}}
+@keyframes slowfade{50%{opacity:.6}}
+@keyframes redpulse{0%,100%{background-color:#5e1010}50%{background-color:#e32626}}
+@keyframes backflash{0%{background-color:#fff}100%{background-color:#14a84b}}
+@keyframes ctrypulse{0%,100%{fill:#5e1010}50%{fill:#d92626}}
+@keyframes chippulse{0%,100%{background-color:#4a0d0d}50%{background-color:#a51c1c}}
+@keyframes halo{0%{opacity:.9;transform:scale(1)}100%{opacity:0;transform:scale(3.2)}}
+@keyframes alarmPulse{50%{box-shadow:0 0 50px var(--ac)}}
+@media (prefers-reduced-motion:reduce){.tile.run::after{animation:none}.tile[data-s=fail],.tile[data-s=incident]{animation-duration:6s}}
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="bar-in">
+    <span class="go">LAB-MSFT</span>
+    <span class="vpill" id="vPill" data-v="wait">AGUARDANDO</span>
+    <span class="meta">CICLO <b id="cyc">000</b> · <b id="next">--</b><br>ET <b id="clk">--:--</b></span>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="panel verdict" id="verdictBox" data-v="wait">
+    <div class="ph"><span>Veredito</span><span id="vSince">--</span></div>
+    <div class="vbig" id="vBig">AGUARDANDO</div>
+    <div class="vsub" id="vSub">Primeiro ciclo em andamento.</div>
+    <div class="streak"><span>CONFIRMAÇÃO</span><div id="streakBoxes"></div><b id="streakTxt">0/3</b></div>
+    <div class="vact">
+      <button id="btnArm" class="k-arm" type="button">Armar alarme</button>
+      <button id="btnWake" class="k-wake" type="button">Tela ligada</button>
+    </div>
+    <div class="vnote" id="vNote">O alarme só toca com a página aberta e a tela ligada.</div>
+  </section>
+
+  <section class="panel">
+    <div class="ph"><span>Ensaios</span><span id="runState">--</span></div>
+    <div id="map" class="map"></div>
+    <div class="mbar">
+      <span class="g">VERDE <b id="mGreen">0</b></span>
+      <span class="r">VERMELHO <b id="mRed">0</b></span>
+      <span class="a">ÂMBAR <b id="mAmber">0</b></span>
+      <span>DE <b id="mTotal">0</b></span>
+    </div>
+    <div class="det" id="tileDet">Toque num quadrado para ver o detalhe.</div>
+  </section>
+
+  <section class="panel">
+    <div class="ph"><span>Status oficial</span><span id="offAge">--</span></div>
+    <div class="offrow"><span class="tag">M365 EMPRESA</span><b id="offMacStatus" class="pill">--</b></div>
+    <div class="offtitle" id="offMacTitle">Aguardando leitura.</div>
+    <details class="offmore" id="offMore" hidden><summary>Texto da Microsoft</summary><div class="offmsg" id="offMacMsg"></div></details>
+    <div class="kv"><span>Próxima atualização</span><b id="offNext">--</b></div>
+    <div class="kv"><span>M365 consumidor</span><b id="offCons" class="pill">--</b></div>
+  </section>
+
+  <section class="panel">
+    <div class="ph"><span>Mundo · Outlook Web</span><button id="btnProbe" type="button" style="padding:4px 8px;font-size:10px">Sondar</button></div>
+    <div class="wwrap"><svg id="worldSvg" class="world"></svg></div>
+    <div class="chips" id="chips"></div>
+    <div class="det" id="worldDet">Toque num país ou ponto.</div>
+    <div class="winfo" id="probeInfo">Sondas: aguardando a primeira rodada.</div>
+  </section>
+
+  <section class="panel">
+    <div class="ph"><span>Notícias</span><span id="newsNext">--</span></div>
+    <div class="nstat"><span>48H <b id="nTotal">0</b></span><span>1H <b id="nHour">0</b></span><span>PAÍSES <b id="nCc">0</b></span><span id="newsStatus" style="margin-left:auto">--</span></div>
+    <div id="news"><div class="empty">Buscando notícias…</div></div>
+  </section>
+
+  <section class="panel">
+    <div class="links">
+      <a class="human" href="https://outlook.office.com/mail/" target="_blank" rel="noopener noreferrer">TESTE HUMANO · ABRIR OUTLOOK</a>
+      <a href="https://status.cloud.microsoft" target="_blank" rel="noopener noreferrer">Status oficial</a>
+      <a href="https://downdetector.com/status/outlook/" target="_blank" rel="noopener noreferrer">Downdetector</a>
+    </div>
+  </section>
+
+  <p class="foot">Vermelho pulsando: ainda não voltou. Sonda mede, notícia só sugere. Celular bloqueado pausa a página.</p>
+</main>
+
+<div id="alarm" class="alarm" hidden>
+  <div class="abox">
+    <div class="atag" id="aTag">ALERTA</div>
+    <div class="abig" id="aBig">MICROSOFT NORMALIZADA</div>
+    <div class="asub" id="aSub"></div>
+    <button id="aClose" type="button">Dispensar</button>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* ───── utilidades ───── */
+const byId = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const now = () => Date.now();
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const TZ = 'America/New_York';
+const fmtT = ts => new Intl.DateTimeFormat('pt-BR', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false, timeZone: TZ}).format(new Date(ts));
+const fmtHM = ts => new Intl.DateTimeFormat('pt-BR', {hour:'2-digit', minute:'2-digit', hour12:false, timeZone: TZ}).format(new Date(ts));
+const fmtDur = ms => { if (ms == null || !isFinite(ms)) return '--'; if (ms < 0) ms = 0; const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? String(h).padStart(2, '0') + ':' : '') + String(m).padStart(2, '0') + ':' + String(x).padStart(2, '0'); };
+const ago = ts => { const s = Math.max(0, Math.round((now() - ts) / 1000)); if (s < 60) return s + 's'; const m = Math.round(s / 60); if (m < 60) return m + ' min'; return Math.floor(m / 60) + 'h' + String(m % 60).padStart(2, '0'); };
+const hostOf = u => { try { return new URL(u).host; } catch (e) { return u; } };
+function htmlToText(h) {
+  if (!h) return '';
+  try {
+    const d = new DOMParser().parseFromString(String(h), 'text/html');
+    d.querySelectorAll('br').forEach(b => b.replaceWith('\n'));
+    d.querySelectorAll('div,p,li').forEach(n => n.prepend('\n'));
+    return (d.body.textContent || '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  } catch (e) { return String(h).replace(/<[^>]*>/g, ' '); }
+}
+const cfg = {interval: 30, confirm: 3, timeout: 10, slow: 3000};
+
+/* ───── ensaios (versão enxuta: 16) ─────
+   core = crítico · aux = auxiliar · watch = observação (não segura o NORMAL) · control = sua rede · official = Microsoft */
+const T = (id, tk, name, url, mode, role, w, extra) => Object.assign({id, tk, name, url, mode, role, w}, extra || {});
+const STAGES = [
+  {id:'EXO', name:'EXCHANGE', tests:[
+    T('owa1','OWA','Outlook Web','https://outlook.office.com/','nc','core',8),
+    T('owa2','O365','Outlook 365','https://outlook.office365.com/','nc','core',7),
+    T('owa3','OCLD','Outlook cloud','https://outlook.cloud.microsoft/','nc','core',6),
+    T('ews','EWS','Exchange Web Services','https://outlook.office365.com/EWS/Exchange.asmx','nc','watch',3),
+    T('autod','AUTD','Autodiscover','https://autodiscover-s.outlook.com/','nc','watch',3)
+  ]},
+  {id:'AAD', name:'IDENTIDADE', tests:[
+    T('login','AAD','Login Microsoft','https://login.microsoftonline.com/','nc','core',6),
+    T('oidc','OIDC','Config de login','https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration','http','core',4,{expect:200, body:'token_endpoint'}),
+    T('graph','GRPH','Graph API (401 esperado)','https://graph.microsoft.com/v1.0/me','http','core',5,{expect:401, body:'InvalidAuthenticationToken'})
+  ]},
+  {id:'TMS', name:'TEAMS', tests:[
+    T('tms1','TMS','Teams','https://teams.microsoft.com/','nc','core',6),
+    T('tms2','TCLD','Teams cloud','https://teams.cloud.microsoft/','nc','core',4)
+  ]},
+  {id:'OFF', name:'OFICIAL', tests:[
+    T('offmac','EMPR','Status M365 empresa','https://status.cloud.microsoft/api/posts/mac','official','official',5,{kind:'mac'}),
+    T('offcons','CONS','Status M365 consumidor','https://status.cloud.microsoft/api/posts/m365Consumer','official','official',3,{kind:'cons'})
+  ]},
+  {id:'PRT', name:'PORTAIS', tests:[
+    T('m365','M365','Portal Microsoft 365','https://www.microsoft365.com/','nc','aux',4),
+    T('adm','ADMN','Admin center','https://admin.microsoft.com/','nc','aux',3)
+  ]},
+  {id:'CTL', name:'SUA REDE', tests:[
+    T('ctl1','GSTC','Controle Google','https://www.gstatic.com/generate_204','nc','control',2),
+    T('ctl2','CFLR','Controle Cloudflare','https://www.cloudflare.com/cdn-cgi/trace','nc','control',2)
+  ]}
+];
+const TBY = {};
+STAGES.forEach(s => s.tests.forEach(t => { TBY[t.id] = t; t.stage = s; }));
+const ROLE = {core:'crítico', aux:'auxiliar', watch:'observação, não segura o NORMAL', control:'controle da sua rede', official:'oficial'};
+
+/* ───── estado ───── */
+const hist = {}, failRun = {};
+let cycle = 0, running = false, nextAt = 0, timerId = null;
+let verdict = {v:'wait', reason:''}, lastChange = now(), streak = 0, hadProblem = false, incidentStart = null, incidentEnd = null;
+let armed = false, audioCtx = null, wakeLock = null, wakeWanted = false, selTile = null;
+const official = {mac:null, cons:null, err:null, nextTs:null, nextRaw:null};
+const VMAP = {wait:{t:'AGUARDANDO', c:'#9b9b9b'}, down:{t:'FORA', c:'#ff3434'}, rec:{t:'RECUPERANDO', c:'#ffb000'}, ok:{t:'NORMAL', c:'#1fd062'}, inc:{t:'INCONCLUSIVO', c:'#3d8bfd'}};
+const lastState = id => { const h = hist[id]; return h && h.length ? h[h.length - 1].state : 'idle'; };
+const isRed = s => s === 'fail' || s === 'incident';
+
+/* ───── proxy para o status oficial ───── */
+const PROXIES = [
+  {name:'r.jina.ai', build: u => 'https://r.jina.ai/' + u, opts:{headers:{'Accept':'application/json'}}, parse: async r => { const j = await r.json(); if (!j || !j.data || typeof j.data.content !== 'string') throw new Error('sem conteúdo'); return j.data.content; }},
+  {name:'allorigins', build: u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u), opts:{}, parse: async r => r.text()}
+];
+async function fetchViaProxy(url) {
+  let last = null;
+  for (const p of PROXIES) {
+    const c = new AbortController(); const to = setTimeout(() => c.abort(), 15000);
+    try {
+      const r = await fetch(p.build(url), Object.assign({}, p.opts, {cache:'no-store', credentials:'omit', signal: c.signal}));
+      if (!r.ok) throw new Error(p.name + ' HTTP ' + r.status);
+      return {data: JSON.parse(await p.parse(r)), via: p.name};
+    } catch (e) { last = new Error(p.name + ': ' + (e.name === 'AbortError' ? 'timeout' : e.message)); }
+    finally { clearTimeout(to); }
+  }
+  throw last;
+}
+function judgeStatus(s) {
+  s = String(s || '').trim();
+  if (!s) return 'ok';
+  if (/degrad|interrup|investigat|restoring|recovery|outage|incident|advisory|impact/i.test(s)) return 'bad';
+  if (/^(available|operational|service ?operational|resolved|service ?restored|restored|normal|healthy|false positive|post-incident report published)$/i.test(s)) return 'ok';
+  return 'warn';
+}
+function evalOfficial(kind, data) {
+  if (kind === 'cons') {
+    const bad = (Array.isArray(data) ? data : []).filter(x => judgeStatus(x && x.Status) !== 'ok');
+    return {state: bad.length ? 'incident' : 'ok', label: bad.length ? bad.length + ' COM PROBLEMA' : 'OPERACIONAL'};
+  }
+  const j = judgeStatus(data && data.Status);
+  return {state: j === 'ok' ? 'ok' : j === 'bad' ? 'incident' : 'warn', label: (data && data.Status) || 'Sem status', title: (data && data.Title) || '', msg: (data && data.Message) || ''};
+}
+function setPill(el, text, state) { el.textContent = text; el.dataset.s = state; }
+function renderOfficial() {
+  const m = official.mac, c = official.cons;
+  if (m) {
+    const ev = evalOfficial('mac', m.data);
+    setPill(byId('offMacStatus'), String(ev.label).toUpperCase(), ev.state);
+    const txt = htmlToText(ev.msg);
+    byId('offMacTitle').textContent = ev.title || (ev.state === 'ok' ? 'Nenhum incidente declarado.' : 'Incidente sem título.');
+    byId('offMacMsg').textContent = txt;
+    byId('offMore').hidden = !txt;
+    const mm = /Next update by:\s*([^\n]+)/i.exec(txt);
+    official.nextRaw = mm ? mm[1].trim() : null;
+    const ts = official.nextRaw ? Date.parse(official.nextRaw.replace(/^[A-Za-z]+,\s*/, '').replace(/,?\s+at\s+/i, ' ').replace(/\.$/, '')) : NaN;
+    official.nextTs = isNaN(ts) ? null : ts;
+  }
+  if (c) { const ev = evalOfficial('cons', c.data); setPill(byId('offCons'), ev.label, ev.state); }
+}
+
+/* ───── execução de um ensaio ───── */
+async function runTest(t) {
+  const t0 = performance.now();
+  if (t.mode === 'official') {
+    const c = official[t.kind], fresh = c && now() - c.at < 120000;
+    try {
+      let e = c;
+      if (!fresh) { const res = await fetchViaProxy(t.url); e = official[t.kind] = {data: res.data, via: res.via, at: now()}; official.err = null; }
+      const ev = evalOfficial(t.kind, e.data);
+      renderOfficial();
+      return {state: ev.state, ms: fresh ? null : performance.now() - t0, detail: ev.label + (fresh ? ' · cache de ' + ago(e.at) : ' · via ' + e.via)};
+    } catch (err) { official.err = err.message; return {state:'unk', ms: performance.now() - t0, detail: 'proxy falhou (' + err.message + ')'}; }
+  }
+  const c = new AbortController(); const to = setTimeout(() => c.abort(), cfg.timeout * 1000);
+  try {
+    if (t.mode === 'nc') {
+      await fetch(t.url + (t.url.indexOf('?') < 0 ? '?' : '&') + '_lab=' + now(), {mode:'no-cors', cache:'no-store', credentials:'omit', signal: c.signal});
+      const ms = performance.now() - t0;
+      return {state: ms > cfg.slow ? 'slow' : 'ok', ms, detail: 'respondeu'};
+    }
+    const r = await fetch(t.url, {cache:'no-store', credentials:'omit', signal: c.signal});
+    const txt = await r.text(), ms = performance.now() - t0;
+    if (r.status === t.expect && (!t.body || txt.indexOf(t.body) >= 0)) return {state: ms > cfg.slow ? 'slow' : 'ok', ms, detail: 'HTTP ' + r.status + ' como esperado'};
+    return {state:'fail', ms, detail: 'HTTP ' + r.status + ' (esperado ' + t.expect + ')'};
+  } catch (e) {
+    const isTo = e.name === 'AbortError';
+    return {state:'fail', ms: performance.now() - t0, timeout: isTo, detail: isTo ? 'sem resposta em ' + cfg.timeout + ' s' : 'erro de rede'};
+  } finally { clearTimeout(to); }
+}
+
+/* ───── mapa de calor ───── */
+function squarify(items, x, y, w, h) {
+  const out = [], total = items.reduce((a, b) => a + b.weight, 0);
+  if (!items.length || total <= 0 || w <= 0 || h <= 0) return out;
+  const sc = items.map(it => ({it, a: it.weight / total * w * h}));
+  let rx = x, ry = y, rw = w, rh = h, row = [];
+  const worst = (r, side) => { const s = r.reduce((a, b) => a + b.a, 0); let mx = 0, mn = Infinity; r.forEach(q => { mx = Math.max(mx, q.a); mn = Math.min(mn, q.a); }); return Math.max(side * side * mx / (s * s), (s * s) / (side * side * mn)); };
+  const place = r => {
+    const s = r.reduce((a, b) => a + b.a, 0);
+    if (rw >= rh) { const cw = s / rh; let cy = ry; r.forEach(q => { const qh = q.a / cw; out.push({it: q.it, x: rx, y: cy, w: cw, h: qh}); cy += qh; }); rx += cw; rw -= cw; }
+    else { const ch = s / rw; let cx = rx; r.forEach(q => { const qw = q.a / ch; out.push({it: q.it, x: cx, y: ry, w: qw, h: ch}); cx += qw; }); ry += ch; rh -= ch; }
+  };
+  let i = 0;
+  while (i < sc.length) {
+    const side = Math.max(1e-6, Math.min(rw, rh));
+    if (!row.length || worst(row.concat([sc[i]]), side) <= worst(row, side)) { row.push(sc[i]); i++; } else { place(row); row = []; }
+  }
+  if (row.length) place(row);
+  return out;
+}
+const tileEls = {}, secEls = {};
+function buildMap() {
+  const map = byId('map');
+  for (const s of STAGES) {
+    const sec = document.createElement('div');
+    sec.className = 'sec';
+    sec.innerHTML = '<div class="sh"><span>' + esc(s.name) + '</span><span class="sc" id="sc-' + s.id + '"></span></div>';
+    map.appendChild(sec); secEls[s.id] = sec;
+    for (const t of s.tests) {
+      const el = document.createElement('div');
+      el.className = 'tile'; el.dataset.s = 'idle'; el.dataset.tid = t.id;
+      el.innerHTML = '<b class="tk">' + esc(t.tk) + '</b><span class="tv" id="tv-' + t.id + '">--</span>';
+      map.appendChild(el); tileEls[t.id] = el;
+    }
+  }
+  layoutMap();
+}
+function layoutMap() {
+  const map = byId('map'), W = map.clientWidth, H = map.clientHeight;
+  if (!W || !H) return;
+  const groups = STAGES.map(s => ({weight: s.tests.reduce((a, t) => a + t.w, 0), s})).sort((a, b) => b.weight - a.weight);
+  for (const g of squarify(groups, 0, 0, W, H)) {
+    const s = g.it.s, sec = secEls[s.id];
+    const gx = Math.round(g.x), gy = Math.round(g.y), gw = Math.round(g.x + g.w) - gx, gh = Math.round(g.y + g.h) - gy;
+    Object.assign(sec.style, {left: gx + 'px', top: gy + 'px', width: gw + 'px', height: gh + 'px'});
+    const hdr = gh > 44 && gw > 54 ? 15 : 0;
+    sec.classList.toggle('nohdr', !hdr);
+    for (const r of squarify(s.tests.map(t => ({weight: t.w, t})).sort((a, b) => b.weight - a.weight), gx + 2, gy + hdr + 2, Math.max(1, gw - 4), Math.max(1, gh - hdr - 4))) {
+      const el = tileEls[r.it.t.id];
+      const x = Math.round(r.x), y = Math.round(r.y), w = Math.max(1, Math.round(r.x + r.w) - x - 2), h = Math.max(1, Math.round(r.y + r.h) - y - 2);
+      Object.assign(el.style, {left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px'});
+      let fs = Math.max(8, Math.min(34, Math.min(w / Math.max(3, r.it.t.tk.length) * 1.5, h * 0.4)));
+      el.style.setProperty('--fs', fs.toFixed(1) + 'px');
+      el.classList.toggle('xs', h < 30 || w < 34);
+      const tw = el.firstElementChild.scrollWidth;
+      if (tw > w - 6 && tw > 0) el.style.setProperty('--fs', Math.max(7, fs * (w - 6) / tw).toFixed(1) + 'px');
+    }
+  }
+}
+function fitVerdict() {
+  const el = byId('vBig'); let fs = 52;
+  el.style.fontSize = fs + 'px';
+  while (el.scrollWidth > el.clientWidth + 1 && fs > 22) { fs -= 2; el.style.fontSize = fs + 'px'; }
+}
+let raf = 0;
+const relayout = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { layoutMap(); fitVerdict(); drawWorld(); }); };
+window.addEventListener('resize', relayout);
+if ('ResizeObserver' in window) new ResizeObserver(relayout).observe(byId('map'));
+
+const latLevel = ms => ms == null || ms < 400 ? 'g3' : ms < 1200 ? 'g2' : 'g1';
+function tileValue(t, r) {
+  if (r.state === 'fail') return r.timeout ? 'TIMEOUT' : 'ERRO';
+  if (r.state === 'incident') return 'INCIDENTE';
+  if (r.state === 'unk') return 'S/ LEITURA';
+  if (r.state === 'warn') return 'ATENÇÃO';
+  if (t.mode === 'official') return 'OK';
+  return r.ms == null ? 'cache' : Math.round(r.ms) + 'ms';
+}
+function paintTile(t, r, prev) {
+  const el = tileEls[t.id];
+  el.classList.remove('run');
+  el.dataset.s = r.state;
+  el.dataset.lv = r.state === 'ok' ? latLevel(t.mode === 'official' ? null : r.ms) : '';
+  byId('tv-' + t.id).textContent = tileValue(t, r);
+  if (prev && isRed(prev) && (r.state === 'ok' || r.state === 'slow')) {
+    el.classList.remove('back'); void el.offsetWidth; el.classList.add('back');
+    setTimeout(() => el.classList.remove('back'), 3000);
+  }
+  if (selTile === t.id) showTileDet(t);
+}
+function updateSector(s) {
+  const st = s.tests.map(t => lastState(t.id)), red = st.filter(isRed).length;
+  const el = byId('sc-' + s.id);
+  el.textContent = st.filter(x => x === 'ok').length + '/' + st.length;
+  el.classList.toggle('bad', red > 0);
+}
+function updateCounts() {
+  const st = Object.keys(TBY).map(lastState);
+  byId('mTotal').textContent = st.length;
+  byId('mGreen').textContent = st.filter(x => x === 'ok').length;
+  byId('mRed').textContent = st.filter(isRed).length;
+  byId('mAmber').textContent = st.filter(x => x === 'slow' || x === 'warn').length;
+}
+function showTileDet(t) {
+  const h = hist[t.id] || [], r = h[h.length - 1];
+  const line = h.slice(-12).map(x => isRed(x.state) ? '▼' : x.state === 'ok' ? '▲' : '■').join('');
+  byId('tileDet').innerHTML = '<b>' + esc(t.tk) + '</b> · ' + esc(t.name) + ' · ' + esc(hostOf(t.url)) + '<br>' +
+    (r ? esc(tileValue(t, r)) + ' · ' + esc(r.detail || '') + ' · ' + fmtT(r.ts) + ' ET' : 'aguardando o ensaio') +
+    '<br>Papel: ' + esc(ROLE[t.role]) + (line ? ' · histórico ' + line : '');
+}
+byId('map').addEventListener('click', e => {
+  const el = e.target.closest('.tile');
+  if (!el) return;
+  if (selTile && tileEls[selTile]) tileEls[selTile].classList.remove('sel');
+  selTile = el.dataset.tid;
+  el.classList.add('sel');
+  showTileDet(TBY[selTile]);
+});
+
+/* ───── ciclo e veredito ───── */
+async function runCycle() {
+  if (running) return;
+  running = true; clearTimeout(timerId); nextAt = 0; cycle++;
+  byId('cyc').textContent = String(cycle).padStart(3, '0');
+  byId('runState').textContent = 'em execução';
+  const results = [];
+  try {
+    for (const s of STAGES) {
+      secEls[s.id].classList.add('run');
+      s.tests.forEach(t => tileEls[t.id].classList.add('run'));
+      const rs = await Promise.all(s.tests.map(async t => {
+        const r = await runTest(t), prev = lastState(t.id);
+        (hist[t.id] = hist[t.id] || []).push({state: r.state, ms: r.ms, ts: now(), detail: r.detail, timeout: r.timeout});
+        if (hist[t.id].length > 60) hist[t.id].shift();
+        failRun[t.id] = r.state === 'fail' ? (failRun[t.id] || 0) + 1 : 0;
+        paintTile(t, r, prev);
+        return Object.assign({t}, r);
+      }));
+      results.push.apply(results, rs);
+      secEls[s.id].classList.remove('run');
+      updateSector(s); updateCounts();
+      await sleep(120);
+    }
+    evaluate(results);
+  } finally {
+    Object.values(tileEls).forEach(el => el.classList.remove('run'));
+    Object.values(secEls).forEach(el => el.classList.remove('run'));
+    running = false;
+    byId('runState').textContent = 'em espera';
+    schedule();
+  }
+}
+function schedule() {
+  clearTimeout(timerId);
+  nextAt = now() + cfg.interval * 1000;
+  timerId = setTimeout(runCycle, cfg.interval * 1000);
+}
+function evaluate(results) {
+  const by = role => results.filter(r => r.t.role === role);
+  const ctl = by('control'), core = by('core'), aux = by('aux'), watch = by('watch'), off = by('official');
+  const tks = rs => rs.map(r => r.t.tk).join(', ');
+  const offBad = off.filter(r => r.state === 'incident' || r.state === 'warn');
+  const offUnk = off.length > 0 && off.every(r => r.state === 'unk');
+  const redWatch = watch.filter(r => r.state === 'fail');
+  const note = redWatch.length ? ' Ainda vermelhos, sem bloquear: ' + tks(redWatch) + '.' : '';
+  let v = null, reason = '', clean = false, problem = false;
+  if (ctl.length && ctl.every(r => r.state === 'fail')) { v = 'inc'; reason = 'Sua internet falhou nos testes de controle.'; }
+  else {
+    const coreFail = core.filter(r => r.state === 'fail'), coreSlow = core.filter(r => r.state === 'slow');
+    const auxP = aux.filter(r => r.state === 'fail' && (failRun[r.t.id] || 0) >= 2);
+    if (coreFail.length) { v = 'down'; problem = true; reason = 'Sem resposta: ' + tks(coreFail) + '.'; }
+    else if (offBad.length) { v = 'rec'; problem = true; reason = 'Ensaios passam, mas a Microsoft ainda declara incidente.' + note; }
+    else if (auxP.length) { v = 'rec'; problem = true; reason = 'Falha persistente: ' + tks(auxP) + '.'; }
+    else if (coreSlow.length) { v = 'rec'; problem = true; reason = 'Lentos: ' + tks(coreSlow) + '.'; }
+    else clean = true;
+  }
+  if (clean) streak++; else if (v !== 'inc') streak = 0;
+  if (clean) {
+    const tail = offUnk ? ' Status oficial sem leitura.' : '';
+    if (streak >= cfg.confirm) { v = 'ok'; reason = 'Limpo por ' + streak + ' ciclos seguidos.' + tail + note; }
+    else { v = 'rec'; reason = 'Ensaios limpos. Confirmando ' + streak + '/' + cfg.confirm + '.' + tail + note; }
+  }
+  if (problem) { hadProblem = true; if (!incidentStart || incidentEnd) { incidentStart = now(); incidentEnd = null; } }
+  setVerdict(v, reason);
+  renderStreak();
+}
+function setVerdict(v, reason) {
+  const prev = verdict.v;
+  verdict = {v, reason};
+  byId('verdictBox').dataset.v = v;
+  byId('vBig').textContent = VMAP[v].t;
+  byId('vPill').textContent = VMAP[v].t;
+  byId('vPill').dataset.v = v;
+  byId('vSub').textContent = reason;
+  fitVerdict();
+  if (v !== prev) {
+    lastChange = now();
+    if (v === 'ok' && hadProblem) { incidentEnd = now(); hadProblem = false; fireAlarm('normal'); }
+    else if (prev === 'ok' && v === 'down') fireAlarm('regress');
+  }
+  applyTitle();
+}
+function renderStreak() {
+  const n = cfg.confirm, k = Math.min(streak, n);
+  byId('streakBoxes').innerHTML = Array.from({length: n}, (_, i) => '<i class="' + (i < k ? 'on' : '') + '"></i>').join('');
+  byId('streakTxt').textContent = k + '/' + n;
+}
+let titleFlash = null;
+function applyTitle() {
+  if (titleFlash) return;
+  document.title = '[' + VMAP[verdict.v].t + '] LAB-MSFT';
+  try {
+    const c = document.createElement('canvas'); c.width = c.height = 32;
+    const x = c.getContext('2d'); x.fillStyle = '#000'; x.fillRect(0, 0, 32, 32); x.fillStyle = VMAP[verdict.v].c; x.fillRect(4, 4, 24, 24);
+    byId('fav').href = c.toDataURL('image/png');
+  } catch (e) {}
+}
+
+/* ───── alarme e tela ligada ───── */
+function ensureAudio() {
+  if (!audioCtx) { const AC = window.AudioContext || window.webkitAudioContext; if (AC) audioCtx = new AC(); }
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+function beep(f, start, dur, type, vol) {
+  const ac = audioCtx; if (!ac) return;
+  const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + start;
+  o.type = type; o.frequency.value = f;
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + dur + 0.05);
+}
+function playPattern(kind) {
+  if (!armed || !ensureAudio()) return;
+  if (kind === 'regress') [880, 622, 440, 311].forEach((f, i) => beep(f, i * 0.22, 0.3, 'sawtooth', 0.14));
+  else [523, 659, 784, 1047, 1319].forEach((f, i) => beep(f, i * 0.15, 0.24, 'triangle', 0.25));
+  try { if (navigator.vibrate) navigator.vibrate(kind === 'regress' ? [400, 150, 400] : [150, 80, 150, 80, 300]); } catch (e) {}
+}
+let alarmTimer = null;
+function fireAlarm(kind) {
+  const box = byId('alarm');
+  box.className = 'alarm ' + (kind === 'regress' ? 'regress' : 'normal');
+  box.hidden = false;
+  const dur = incidentStart ? fmtDur((incidentEnd || now()) - incidentStart) : '--';
+  let title;
+  if (kind === 'normal') { byId('aTag').textContent = 'RETORNO AO NORMAL · ' + fmtT(now()) + ' ET'; title = 'MICROSOFT NORMALIZADA'; byId('aSub').textContent = verdict.reason + ' Incidente observado por ' + dur + '. Abra o Outlook para confirmar.'; }
+  else if (kind === 'regress') { byId('aTag').textContent = 'REGRESSÃO · ' + fmtT(now()) + ' ET'; title = 'MICROSOFT CAIU DE NOVO'; byId('aSub').textContent = verdict.reason; }
+  else { byId('aTag').textContent = 'TESTE'; title = 'ALARME ARMADO'; byId('aSub').textContent = 'Você vai ouvir este som quando tudo voltar. Mantenha a página aberta e a tela ligada.'; }
+  byId('aBig').textContent = title;
+  clearInterval(alarmTimer);
+  let n = 0; const limit = kind === 'test' ? 1 : 24;
+  const play = () => { playPattern(kind); if (++n >= limit) clearInterval(alarmTimer); };
+  play();
+  if (limit > 1) alarmTimer = setInterval(play, 5000);
+  clearInterval(titleFlash);
+  let on = false;
+  titleFlash = setInterval(() => { on = !on; document.title = on ? '█ ' + title : '[' + VMAP[verdict.v].t + '] LAB-MSFT'; }, 800);
+}
+byId('aClose').addEventListener('click', () => { byId('alarm').hidden = true; clearInterval(alarmTimer); clearInterval(titleFlash); titleFlash = null; applyTitle(); });
+byId('btnArm').addEventListener('click', () => {
+  if (armed) { armed = false; }
+  else { ensureAudio(); armed = true; fireAlarm('test'); }
+  byId('btnArm').classList.toggle('on', armed);
+  byId('btnArm').textContent = armed ? 'Alarme armado' : 'Armar alarme';
+});
+async function requestWake() {
+  try {
+    if (!('wakeLock' in navigator)) throw new Error('sem suporte');
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => { wakeLock = null; updateWake(); });
+  } catch (e) { wakeLock = null; byId('vNote').textContent = 'Este navegador não deixa manter a tela ligada. Desative o bloqueio automático nos ajustes do celular.'; }
+  updateWake();
+}
+function updateWake() {
+  const on = !!wakeLock;
+  byId('btnWake').classList.toggle('on', on);
+  byId('btnWake').textContent = on ? 'Tela fica ligada' : 'Tela ligada';
+  if (on) byId('vNote').textContent = 'A tela fica ligada enquanto esta página estiver na frente.';
+}
+byId('btnWake').addEventListener('click', async () => {
+  if (wakeLock) { wakeWanted = false; try { await wakeLock.release(); } catch (e) {} wakeLock = null; updateWake(); }
+  else { wakeWanted = true; await requestWake(); }
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  if (wakeWanted && !wakeLock) requestWake();
+  if (!running && nextAt && now() > nextAt - 2000) runCycle();
+  if (!GP.busy && GP.nextAt && now() > GP.nextAt) runProbes();
+  if (!newsBusy && newsNextAt && now() > newsNextAt) refreshNews();
+});
+
+/* ───── países e sondas ───── */
+const CC = {US:{n:'840', pt:'Estados Unidos'}, CA:{n:'124', pt:'Canadá'}, MX:{n:'484', pt:'México'}, BR:{n:'076', pt:'Brasil'}, AR:{n:'032', pt:'Argentina'},
+  GB:{n:'826', pt:'Reino Unido'}, IE:{n:'372', pt:'Irlanda'}, DE:{n:'276', pt:'Alemanha'}, FR:{n:'250', pt:'França'}, ES:{n:'724', pt:'Espanha'},
+  PT:{n:'620', pt:'Portugal'}, IT:{n:'380', pt:'Itália'}, NL:{n:'528', pt:'Holanda'}, AT:{n:'040', pt:'Áustria'}, CH:{n:'756', pt:'Suíça'},
+  ZA:{n:'710', pt:'África do Sul'}, IN:{n:'356', pt:'Índia'}, JP:{n:'392', pt:'Japão'}, KR:{n:'410', pt:'Coreia do Sul'}, SG:{n:'702', pt:'Singapura'},
+  AU:{n:'036', pt:'Austrália'}, NZ:{n:'554', pt:'Nova Zelândia'}, CL:{n:'152', pt:'Chile'}, PL:{n:'616', pt:'Polônia'}, BE:{n:'056', pt:'Bélgica'}};
+const NUM2CC = {}; Object.keys(CC).forEach(k => { NUM2CC[CC[k].n] = k; });
+const GP_TARGET = {host:'outlook.office.com', path:'/'};
+const GP_LOCS = [
+  {k:'NY', cc:'US', q:{magic:'New York'}}, {k:'LA', cc:'US', q:{magic:'Los Angeles'}}, {k:'MX', cc:'MX', q:{country:'MX'}},
+  {k:'BR', cc:'BR', q:{country:'BR'}}, {k:'GB', cc:'GB', q:{country:'GB'}}, {k:'DE', cc:'DE', q:{country:'DE'}},
+  {k:'IN', cc:'IN', q:{country:'IN'}}, {k:'JP', cc:'JP', q:{country:'JP'}}, {k:'SG', cc:'SG', q:{country:'SG'}}, {k:'AU', cc:'AU', q:{country:'AU'}}
+];
+const GP = {every: 900000, nextAt: 0, busy: false, timer: null, quota: {}, lastTs: 0, err: null, probes: {}};
+const GP_API = 'https://api.globalping.io/v1/measurements';
+async function gpCreate(body) {
+  const c = new AbortController(); const to = setTimeout(() => c.abort(), 20000);
+  try {
+    const r = await fetch(GP_API, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body), credentials:'omit', signal: c.signal});
+    const rem = r.headers.get('x-ratelimit-remaining');
+    if (rem != null) GP.quota = {limit: Number(r.headers.get('x-ratelimit-limit')), remaining: Number(rem), reset: Number(r.headers.get('x-ratelimit-reset')), at: now()};
+    const j = await r.json().catch(() => ({}));
+    if (r.status === 429) { GP.quota.remaining = 0; throw new Error('cota esgotada'); }
+    if (!r.ok || !j.id) throw new Error((j.error && j.error.message) || ('HTTP ' + r.status));
+    return j.id;
+  } finally { clearTimeout(to); }
+}
+async function gpWait(id, maxMs) {
+  const t0 = now();
+  while (now() - t0 < maxMs) {
+    await sleep(1600);
+    try { const j = await (await fetch(GP_API + '/' + id, {cache:'no-store', credentials:'omit'})).json(); if (j.status && j.status !== 'in-progress') return j; } catch (e) {}
+  }
+  throw new Error('medição não terminou');
+}
+const probeId = p => [p.country, p.city, p.asn, p.network].join('|');
+function ingestProbes(ctl, tgt) {
+  const ctlMap = {};
+  (ctl.results || []).forEach(x => { ctlMap[probeId(x.probe)] = x.result; });
+  const res = tgt.results || [];
+  const exact = res.length === GP_LOCS.length && res.every((x, i) => x.probe.country === GP_LOCS[i].cc);
+  const seen = {};
+  res.forEach((x, i) => {
+    const p = x.probe, r = x.result || {};
+    let k = exact ? GP_LOCS[i].k : (p.country === 'US' ? (/^(NY|NJ|CT|PA|MA)$/.test(p.state || '') ? 'NY' : 'LA') : p.country);
+    if (seen[k]) k += '2'; seen[k] = true;
+    const c = ctlMap[probeId(p)], ctlOk = !c || (c.status === 'finished' && c.statusCode), prev = GP.probes[k];
+    let state, val, detail;
+    if (!ctlOk) { state = 'noctl'; val = 'S/ REDE'; detail = 'sonda falhou no controle'; }
+    else if (r.status === 'finished' && r.statusCode) { state = 'ok'; val = Math.round((r.timings && r.timings.total) || 0) + 'ms'; detail = 'HTTP ' + r.statusCode; }
+    else { state = 'down'; val = /timed out/i.test(r.rawOutput || '') ? 'TIMEOUT' : 'FALHA'; detail = String(r.rawOutput || 'sem resposta').split('\n')[0].slice(0, 90); }
+    const lastDown = state === 'down' ? now() : (prev && prev.lastDown) || 0;
+    if (state === 'ok' && lastDown && now() - lastDown < 30 * 60000) state = 'back';
+    GP.probes[k] = {k, cc: p.country, city: p.city, lat: p.latitude, lon: p.longitude, network: p.network, state, val, detail, ts: now(), lastDown};
+  });
+}
+async function runProbes() {
+  if (GP.busy) return;
+  if (GP.quota.remaining != null && GP.quota.remaining < GP_LOCS.length * 2) {
+    GP.err = 'cota insuficiente, aguardando reset';
+    scheduleProbes(Math.max(60000, (GP.quota.reset || 600) * 1000 - (now() - (GP.quota.at || now()))));
+    renderProbeInfo(); return;
+  }
+  GP.busy = true; Object.values(GP.probes).forEach(p => { p.pending = true; }); renderChips(); renderProbeInfo();
+  try {
+    const locs = GP_LOCS.map(l => l.q);
+    const ctlId = await gpCreate({type:'http', target:'www.google.com', locations: locs, measurementOptions:{protocol:'HTTPS', request:{method:'HEAD', path:'/generate_204'}}});
+    const ctl = await gpWait(ctlId, 30000);
+    let tgtId;
+    try { tgtId = await gpCreate({type:'http', target: GP_TARGET.host, locations: ctlId, measurementOptions:{protocol:'HTTPS', request:{method:'HEAD', path: GP_TARGET.path}}}); }
+    catch (e) { tgtId = await gpCreate({type:'http', target: GP_TARGET.host, locations: locs, measurementOptions:{protocol:'HTTPS', request:{method:'HEAD', path: GP_TARGET.path}}}); }
+    ingestProbes(ctl, await gpWait(tgtId, 45000));
+    GP.err = null; GP.lastTs = now();
+  } catch (e) { GP.err = e.message; }
+  finally {
+    Object.values(GP.probes).forEach(p => { p.pending = false; });
+    GP.busy = false; scheduleProbes(GP.every);
+    renderChips(); renderProbeInfo(); drawWorld();
+  }
+}
+function scheduleProbes(ms) { clearTimeout(GP.timer); GP.nextAt = now() + ms; GP.timer = setTimeout(runProbes, ms); }
+function renderProbeInfo() {
+  const q = GP.quota;
+  byId('probeInfo').innerHTML = 'Sondas Globalping em datacenters · ' + (GP.busy ? '<b>rodada em andamento</b>' : 'última ' + (GP.lastTs ? fmtHM(GP.lastTs) + ' ET' : '--') + ' · próxima <b>' + (GP.nextAt ? fmtDur(GP.nextAt - now()) : '--') + '</b>') +
+    (q.remaining != null ? ' · cota ' + q.remaining + '/' + q.limit : '') + (GP.err ? ' · <span style="color:var(--red)">' + esc(GP.err) + '</span>' : '');
+}
+function renderChips() {
+  byId('chips').innerHTML = GP_LOCS.map(l => {
+    const p = GP.probes[l.k];
+    if (!p) return '<span class="chip" data-pk="' + l.k + '"><b>' + l.k + '</b>' + (GP.busy ? '…' : '--') + '</span>';
+    const a = p.state === 'down' ? '▼' : p.state === 'noctl' ? '■' : '▲';
+    return '<span class="chip s-' + p.state + '" data-pk="' + l.k + '"><b>' + l.k + '</b>' + (p.pending ? '…' : a + ' ' + esc(p.state === 'back' ? 'VOLTOU' : p.val)) + '</span>';
+  }).join('');
+}
+byId('btnProbe').addEventListener('click', runProbes);
+
+/* ───── mapa-múndi ───── */
+const WORLD = {ready: false, err: null, features: null};
+const loadScript = src => new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.async = true; s.onload = res; s.onerror = () => rej(new Error('falha ao carregar o mapa')); document.head.appendChild(s); });
+async function initWorld() {
+  try {
+    if (!window.d3) await loadScript('https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js');
+    if (!window.topojson) await loadScript('https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js');
+    const topo = await (await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json', {credentials:'omit'})).json();
+    WORLD.features = topojson.feature(topo, topo.objects.countries).features.filter(f => f.id !== '010');
+    WORLD.ready = true;
+  } catch (e) { WORLD.err = e.message; }
+  drawWorld();
+}
+const PRANK = {down: 4, back: 3, ok: 2, noctl: 1};
+function newsByCountry() {
+  const m = {}, lim = now() - 3 * 3600e3;
+  for (const n of news.values()) {
+    if (n.ts < lim) continue;
+    n.ccs.forEach(cc => {
+      const s = m[cc] || (m[cc] = {issue: 0, back: 0, lastIssue: 0, lastBack: 0, top: null});
+      if (n.recovery) { s.back++; s.lastBack = Math.max(s.lastBack, n.ts); } else { s.issue++; s.lastIssue = Math.max(s.lastIssue, n.ts); }
+      if (!s.top || n.ts > s.top.ts) s.top = n;
+    });
+  }
+  return m;
+}
+function countryStates() {
+  const out = {}, nb = newsByCountry();
+  Object.keys(nb).forEach(cc => {
+    const s = nb[cc], id = CC[cc] && CC[cc].n; if (!id) return;
+    if (s.lastBack && s.lastBack >= s.lastIssue) out[id] = {cls:'n-back'};
+    else if (s.issue) out[id] = {cls:'n-issue', heat: Math.min(.9, .3 + s.issue / 10).toFixed(2)};
+  });
+  const pc = {};
+  Object.values(GP.probes).forEach(p => { if (!pc[p.cc] || PRANK[p.state] > PRANK[pc[p.cc]]) pc[p.cc] = p.state; });
+  Object.keys(pc).forEach(cc => { const id = CC[cc] && CC[cc].n; if (id) out[id] = {cls:'p-' + pc[cc], probe: pc[cc]}; });
+  return {byId: out, news: nb};
+}
+function drawWorld() {
+  const svg = byId('worldSvg'), w = svg.clientWidth, h = svg.clientHeight;
+  if (!w || !h) return;
+  svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+  if (!WORLD.ready) { svg.innerHTML = '<text class="wmsg" x="10" y="20">' + esc(WORLD.err ? 'Mapa indisponível. As sondas seguem abaixo.' : 'Carregando o mapa…') + '</text>'; return; }
+  const proj = d3.geoNaturalEarth1().fitExtent([[2, 2], [w - 2, h - 2]], {type:'FeatureCollection', features: WORLD.features});
+  const path = d3.geoPath(proj), cs = countryStates().byId;
+  let html = '<path class="grat" d="' + path(d3.geoGraticule10()) + '"/>';
+  for (const f of WORLD.features) { const st = cs[f.id]; html += '<path class="ctry ' + (st ? st.cls : '') + '" data-cid="' + f.id + '" data-name="' + esc(f.properties && f.properties.name) + '"' + (st && st.heat ? ' style="--heat:' + st.heat + '"' : '') + ' d="' + path(f) + '"/>'; }
+  Object.values(GP.probes).forEach(p => {
+    if (p.lat == null) return; const xy = proj([p.lon, p.lat]); if (!xy) return;
+    html += '<g class="pdot s-' + (p.pending ? 'wait' : p.state) + '" data-pk="' + esc(p.k) + '" transform="translate(' + xy[0].toFixed(1) + ',' + xy[1].toFixed(1) + ')"><circle class="halo" r="4"/><circle class="core" r="4"/></g>';
+  });
+  svg.innerHTML = html;
+}
+function worldDet(e) {
+  const pk = e.target.closest('[data-pk]'), ce = e.target.closest('[data-cid]');
+  const el = byId('worldDet');
+  if (pk) {
+    const p = GP.probes[pk.dataset.pk];
+    el.innerHTML = p ? '<b>' + esc(p.k) + ' · ' + esc(p.city || '') + '</b> · ' + esc(p.state === 'back' ? 'VOLTOU ' + p.val : p.val) + ' · ' + esc(p.detail) + ' · ' + fmtHM(p.ts) + ' ET' : '<b>' + esc(pk.dataset.pk) + '</b> · aguardando a rodada';
+    return;
+  }
+  if (ce) {
+    const id = ce.dataset.cid, cc = NUM2CC[id], all = countryStates(), st = all.byId[id] || {}, nb = cc ? all.news[cc] : null;
+    const label = st.probe === 'down' ? 'sonda falha' : st.probe === 'back' ? 'sonda voltou' : st.probe === 'ok' ? 'sonda responde' : st.cls === 'n-back' ? 'notícia de retorno' : st.cls === 'n-issue' ? 'notícia de problema' : 'sem sinal';
+    el.innerHTML = '<b>' + esc((cc && CC[cc].pt) || ce.dataset.name || id) + '</b> · ' + label + (nb ? ' · 3h: ' + nb.issue + ' problema, ' + nb.back + ' retorno' : '') + (nb && nb.top ? '<br>' + esc(nb.top.title) : '');
+  }
+}
+byId('worldSvg').addEventListener('click', worldDet);
+byId('chips').addEventListener('click', worldDet);
+
+/* ───── notícias (Bing News, 8 mercados) ─────
+   O Bing rotula como GMT um horário do Pacífico: bingTime corrige. País vem do domínio do veículo. */
+const BING = (mkt, q, fb) => ({mkt, fb, url: 'https://www.bing.com/news/search?q=' + encodeURIComponent(q) + '&format=rss&mkt=' + mkt + '&qft=' + encodeURIComponent('sortbydate="1"')});
+const FEEDS = [BING('en-US', 'Outlook outage', 'US'), BING('pt-BR', 'Outlook fora do ar', 'BR'), BING('es-MX', 'caída Outlook Microsoft', 'MX'), BING('es-ES', 'caída Outlook', 'ES'),
+  BING('de-DE', 'Outlook Störung', 'DE'), BING('fr-FR', 'panne Outlook Microsoft', 'FR'), BING('ja-JP', 'マイクロソフト 障害', 'JP'), BING('en-GB', 'Microsoft outage', null)];
+const TLD_CC = {br:'BR', de:'DE', at:'AT', ch:'CH', uk:'GB', jp:'JP', kr:'KR', ar:'AR', mx:'MX', es:'ES', fr:'FR', it:'IT', nl:'NL', au:'AU', ca:'CA', in:'IN', za:'ZA', ie:'IE', pt:'PT', be:'BE', nz:'NZ', sg:'SG', cl:'CL', pl:'PL'};
+const RX_REL = /microsoft|outlook|teams|365|exchange|azure|copilot|sharepoint|onedrive|hotmail|マイクロソフト|アウトルック|チームズ/i;
+const RX_BACK = /restor|back up|back online|resolved|recover|working again|fixed|mitigat|voltou|volta a funcionar|restabelec|normaliz|resolvid|restablec|vuelve a funcionar|resuelt|recuperad|behoben|funktioniert wieder|rétabli|résolu|de retour|復旧|解消/i;
+const NEWS_EVERY = 600000, NEWS_GAP = 3800;
+const news = new Map();
+let newsFirst = true, newsTimer = null, newsNextAt = 0, newsBusy = false;
+function tzOffsetMs(ts, tz) {
+  const p = new Intl.DateTimeFormat('en-US', {timeZone: tz, hourCycle:'h23', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit'}).formatToParts(new Date(ts));
+  const g = t => Number((p.find(x => x.type === t) || {}).value);
+  return Date.UTC(g('year'), g('month') - 1, g('day'), g('hour') % 24, g('minute'), g('second')) - ts;
+}
+function bingTime(pub) { const raw = Date.parse(pub); if (isNaN(raw)) return null; const fixed = raw - tzOffsetMs(raw, 'America/Los_Angeles'); return Math.min(fixed > now() + 600000 ? raw : fixed, now()); }
+async function fetchRaw(url) {
+  const tries = [{name:'r.jina.ai', u:'https://r.jina.ai/' + url, o:{headers:{'X-Return-Format':'html'}}}, {name:'allorigins', u:'https://api.allorigins.win/raw?url=' + encodeURIComponent(url), o:{}}];
+  let last = null;
+  for (const t of tries) {
+    const c = new AbortController(); const to = setTimeout(() => c.abort(), 15000);
+    try {
+      const r = await fetch(t.u, Object.assign({cache:'no-store', credentials:'omit', signal: c.signal}, t.o));
+      if (!r.ok) throw new Error(t.name + ' HTTP ' + r.status);
+      const txt = await r.text();
+      if (txt.indexOf('<rss') < 0 && txt.indexOf('<item') < 0) throw new Error(t.name + ': sem RSS');
+      return txt;
+    } catch (e) { last = new Error(e.name === 'AbortError' ? t.name + ': timeout' : e.message); }
+    finally { clearTimeout(to); }
+  }
+  throw last;
+}
+function parseItems(txt, f) {
+  const d = new DOMParser().parseFromString(txt, 'text/xml');
+  return Array.from(d.getElementsByTagName('item')).map(i => {
+    const g = n => { const e = i.getElementsByTagName(n)[0]; return e ? e.textContent.trim() : ''; };
+    const title = g('title'); let link = g('link'), host = '';
+    try { const u = new URL(link), real = u.searchParams.get('url'); if (real && /bing\.com$/i.test(u.hostname)) link = real; host = new URL(link).hostname.replace(/^www\./, ''); } catch (e) {}
+    if (!title || !RX_REL.test(title + ' ' + g('description'))) return null;
+    const ts = bingTime(g('pubDate'));
+    if (!ts || now() - ts > 48 * 3600e3) return null;
+    const tld = host.split('.').pop().toLowerCase(), cc = TLD_CC[tld] || f.fb || null;
+    return {key: title.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\p{L}\p{N} ]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 72),
+      title, source: g('News:Source') || host, link: /^https?:\/\//i.test(link) ? link : '', ts, mkt: f.mkt, ccs: new Set(cc ? [cc] : []), recovery: RX_BACK.test(title)};
+  }).filter(Boolean);
+}
+async function refreshNews() {
+  if (newsBusy) return;
+  newsBusy = true; clearTimeout(newsTimer);
+  let ok = 0, err = 0;
+  for (let i = 0; i < FEEDS.length; i++) {
+    const f = FEEDS[i];
+    byId('newsStatus').textContent = 'lendo ' + (i + 1) + '/' + FEEDS.length;
+    try {
+      for (const n of parseItems(await fetchRaw(f.url), f)) {
+        const old = news.get(n.key);
+        if (old) { n.ccs.forEach(c => old.ccs.add(c)); continue; }
+        n.firstSeen = now(); n.isNew = !newsFirst; news.set(n.key, n);
+      }
+      ok++; renderNews();
+    } catch (e) { err++; }
+    if (i < FEEDS.length - 1) await sleep(NEWS_GAP);
+  }
+  newsFirst = false;
+  for (const [k, n] of news) if (now() - n.ts > 48 * 3600e3) news.delete(k);
+  renderNews(); drawWorld();
+  byId('newsStatus').textContent = ok + '/' + FEEDS.length + ' ok' + (err ? ' · ' + err + ' falha' : '');
+  newsBusy = false; newsNextAt = now() + NEWS_EVERY; newsTimer = setTimeout(refreshNews, NEWS_EVERY);
+}
+function renderNews() {
+  const arr = Array.from(news.values()).sort((a, b) => b.ts - a.ts);
+  const ccs = new Set(); arr.forEach(n => n.ccs.forEach(c => ccs.add(c)));
+  byId('nTotal').textContent = arr.length;
+  byId('nHour').textContent = arr.filter(n => now() - n.ts < 3600e3).length;
+  byId('nCc').textContent = ccs.size;
+  if (!arr.length) { byId('news').innerHTML = '<div class="empty">' + (newsBusy ? 'Buscando notícias…' : 'Nenhuma notícia encontrada. Os proxies podem estar bloqueados nesta rede.') + '</div>'; return; }
+  byId('news').innerHTML = arr.slice(0, 15).map(n => {
+    const isNew = n.isNew && now() - n.firstSeen < 600000;
+    const cc = n.ccs.size ? '<span class="ncc">' + esc(Array.from(n.ccs).join(' ')) + '</span>' : '<span class="ncc mk">' + esc(n.mkt) + '</span>';
+    const body = '<span class="nt">' + (n.recovery ? '<span class="nback">RETORNO</span>' : '') + esc(n.title) + '</span><span class="nm">' + cc + esc(n.source) + ' · ' + fmtHM(n.ts) + ' ET · há ' + ago(n.ts) + '</span>';
+    return n.link ? '<a class="ni' + (isNew ? ' new' : '') + '" href="' + esc(n.link) + '" target="_blank" rel="noopener noreferrer">' + body + '</a>' : '<div class="ni">' + body + '</div>';
+  }).join('');
+}
+
+/* ───── relógio ───── */
+function tick() {
+  const t = now();
+  byId('clk').textContent = fmtHM(t);
+  byId('next').textContent = running ? 'agora' : nextAt ? Math.max(0, Math.ceil((nextAt - t) / 1000)) + 's' : '--';
+  byId('vSince').textContent = 'há ' + fmtDur(t - lastChange);
+  const at = Math.max((official.mac && official.mac.at) || 0, (official.cons && official.cons.at) || 0);
+  byId('offAge').textContent = at ? 'lido há ' + ago(at) : 'sem leitura';
+  byId('offNext').textContent = official.nextTs ? fmtHM(official.nextTs) + ' ET · em ' + fmtDur(official.nextTs - t) : (official.nextRaw || '--');
+  byId('newsNext').textContent = newsBusy ? 'buscando' : newsNextAt ? 'próx. ' + fmtDur(newsNextAt - t) : '--';
+  renderProbeInfo();
+}
+
+/* ───── início ───── */
+buildMap(); renderStreak(); renderChips(); applyTitle(); fitVerdict(); tick();
+setInterval(tick, 1000);
+setInterval(renderNews, 30000);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(relayout);
+initWorld();
+runCycle();
+setTimeout(refreshNews, 1500);
+setTimeout(runProbes, 5000);
+})();
+</script>
+</body>
+</html>
